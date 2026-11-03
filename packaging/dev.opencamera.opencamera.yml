@@ -65,7 +65,7 @@ modules:
     buildsystem: simple
     build-commands:
       - mkdir -p /app/opencamera
-      - tar -xzf opencamera-linux-x64.tar.gz -C /app/opencamera
+      - tar --no-same-owner -xzf opencamera-linux-x64.tar.gz -C /app/opencamera
       - mkdir -p /app/bin
       - ln -s /app/opencamera/opencamera /app/bin/opencamera
       - install -Dm644 dev.opencamera.opencamera.desktop /app/share/applications/dev.opencamera.opencamera.desktop

@@ -18,8 +18,8 @@ concurrency:
 jobs:
   build:
     name: Build AppImage
-    # Oldest runner on offer: the binary runs on any distro with a glibc at least as new.
-    runs-on: ubuntu-22.04
+    # 22.04 only ships libmpv.so.1; the app needs libmpv.so.2 (24.04+). Binary needs glibc >= 2.39.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
