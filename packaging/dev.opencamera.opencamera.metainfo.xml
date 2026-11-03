@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.opencamera.opencamera</id>
+  <name>OpenCamera</name>
+  <summary>Viewer for LAN IP cameras</summary>
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <developer id="dev.opencamera">
+    <name translatable="no">OpenCamera</name>
+  </developer>
+  <url type="homepage">https://github.com/evandro777/OpenCam</url>
+  <description>
+    <p>Grid viewer for IP cameras on your local network. Plays RTSP streams directly (H.265 included) and supports ONVIF PTZ. No cloud or PC needed.</p>
+  </description>
+  <launchable type="desktop-id">dev.opencamera.opencamera.desktop</launchable>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="1.0.0" date="2026-11-03">
+      <description>
+        <p>First release.</p>
+      </description>
+    </release>
+  </releases>
+</component>
