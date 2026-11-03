@@ -28,7 +28,7 @@ jobs:
           app=$(sed -nE 's/^version: *([^+]*).*/\1/p' pubspec.yaml)
           [ "${GITHUB_REF_NAME#v}" = "$app" ] || { echo "tag != pubspec $app"; exit 1; }
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17
