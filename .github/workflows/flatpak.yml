@@ -1,0 +1,166 @@
+name: Flatpak
+
+# Builds the Flatpak bundle on every push to master and on pull requests, and adds it to the GitHub release
+# when a version tag (v1.0.1, ...) is pushed.
+on:
+  push:
+    branches: [master]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flatpak-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tarball:
+    name: Build Linux bundle
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Tag matches the version files
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          app=$(sed -nE 's/^version: *([^+]*).*/\1/p' pubspec.yaml)
+          [ "$version" = "$app" ] || { echo "tag $version != pubspec $app"; exit 1; }
+          grep -q "<release version=\"$version\"" packaging/dev.opencamera.opencamera.metainfo.xml \
+            || { echo "metainfo has no <release> entry for $version"; exit 1; }
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libjsoncpp-dev libmpv-dev
+      - run: flutter pub get
+      - run: flutter build linux --release
+      - run: tar -C build/linux/x64/release/bundle -czf opencamera-linux-x64.tar.gz .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-tarball
+          path: opencamera-linux-x64.tar.gz
+
+  bundle:
+    name: Build bundle
+    needs: tarball
+    runs-on: ubuntu-24.04
+    # Flathub's CI image, GNOME 49 preinstalled. Must match runtime-version in packaging/dev.opencamera.opencamera.yml.
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-49
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-tarball
+
+      # Secrets are not available to PRs, so only tags sign. Without the key a tag build would publish an unsigned
+      # remote that system-wide installs refuse, so it stops here instead.
+      - name: Import signing key
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
+        run: |
+          [ -f packaging/signing-key.b64 ] || { echo "packaging/signing-key.b64 is missing: run packaging/new-signing-key.sh and commit it"; exit 1; }
+          [ -n "$GPG_PRIVATE_KEY" ] || { echo "secret FLATPAK_GPG_PRIVATE_KEY is not set (RELEASING.md)"; exit 1; }
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          echo "FLATPAK_GPG_KEY=$(base64 -d packaging/signing-key.b64 | gpg --show-keys --with-colons | awk -F: '/^fpr/ {print $10; exit}')" >> "$GITHUB_ENV"
+
+      # mpv and ffmpeg take long to build; keep the builder state between runs.
+      - uses: actions/cache@v5
+        with:
+          path: .flatpak-builder
+          key: flatpak-${{ hashFiles('packaging/dev.opencamera.opencamera.yml') }}
+
+      - name: Build
+        run: |
+          flatpak-builder --system --disable-rofiles-fuse --force-clean --repo=repo \
+            ${FLATPAK_GPG_KEY:+--gpg-sign=$FLATPAK_GPG_KEY} build-dir packaging/dev.opencamera.opencamera.yml
+          if [ -f packaging/signing-key.b64 ]; then
+            # --repo-url + --gpg-keys make the bundle name the remote, so it can follow it for updates.
+            base64 -d packaging/signing-key.b64 | flatpak build-bundle repo opencamera.flatpak dev.opencamera.opencamera \
+              --repo-url="https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/" --gpg-keys=-
+          else
+            # No key yet: pushes and pull requests still build. Tags fail earlier.
+            echo "WARNING: packaging/signing-key.b64 is missing; run packaging/new-signing-key.sh"
+            flatpak build-bundle repo opencamera.flatpak dev.opencamera.opencamera
+          fi
+
+      - name: Name the bundle
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          [ "${GITHUB_REF_TYPE}" = "tag" ] || version="${GITHUB_SHA::8}"
+          mv opencamera.flatpak "OpenCamera-${version}-x86_64.flatpak"
+
+      - uses: actions/upload-artifact@v7
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: flatpak-repo
+          path: repo
+          include-hidden-files: true
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: flatpak-x86_64
+          path: OpenCamera-*.flatpak
+
+  # Own Flatpak remote on GitHub Pages: `flatpak update` then works. One-time setup is in RELEASING.md.
+  # Every deploy replaces the whole site, so never deploy it from master.
+  pages:
+    name: Publish Flatpak remote
+    needs: bundle
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: flatpak-repo
+          path: site
+      - name: Describe the remote
+        run: |
+          cat > site/opencamera.flatpakrepo <<EOF
+          [Flatpak Repo]
+          Title=OpenCamera
+          Url=https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/
+          Homepage=https://github.com/${GITHUB_REPOSITORY}
+          Comment=Viewer for LAN IP cameras
+          RuntimeRepo=https://dl.flathub.org/repo/flathub.flatpakrepo
+          GPGKey=$(cat packaging/signing-key.b64)
+          EOF
+          sed -i 's/^ *//' site/opencamera.flatpakrepo
+          cp docs/site/index.html site/
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v5
+
+  release:
+    name: Add to release
+    needs: [bundle, pages]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: flatpak-x86_64
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes || sleep 20
+          gh release upload "$GITHUB_REF_NAME" OpenCamera-*.flatpak --repo "$GITHUB_REPOSITORY" --clobber
