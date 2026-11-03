@@ -71,7 +71,7 @@ jobs:
           echo "FLATPAK_GPG_KEY=$(base64 -d packaging/signing-key.b64 | gpg --show-keys --with-colons | awk -F: '/^fpr/ {print $10; exit}')" >> "$GITHUB_ENV"
 
       # mpv and ffmpeg take long to build; keep the builder state between runs.
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: .flatpak-builder
           key: flatpak-${{ hashFiles('packaging/dev.opencamera.opencamera.yml') }}
