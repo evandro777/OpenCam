@@ -4,13 +4,13 @@ Releases are Git tags. On a `vX.Y.Z` tag, CI builds the AppImage, the Flatpak an
 
 1. Pick the version (`1.0.0`). Update:
     - [pubspec.yaml](./pubspec.yaml) → `version: 1.0.0+1` (the number after `+` is the Android versionCode; always increase it)
-    - [metainfo](./packaging/dev.opencamera.opencamera.metainfo.xml) → add a `<release version="1.0.0" date="YYYY-MM-DD">` entry (newest first). `flatpak.yml` fails the tag without it.
+    - [metainfo](./packaging/dev.opencam.opencam.metainfo.xml) → add a `<release version="1.0.0" date="YYYY-MM-DD">` entry (newest first). `flatpak.yml` fails the tag without it.
 2. Run `dart format lib test && flutter analyze && flutter test`.
 3. Commit, merge to `master`, wait for CI.
 4. Tag and push (the tag must equal the version, or the workflows fail):
 
     ```sh
-    git tag v1.0.0 -m "OpenCamera 1.0.0"
+    git tag v1.0.0 -m "OpenCam 1.0.0"
     git push origin v1.0.0
     ```
 
@@ -19,8 +19,8 @@ Releases are Git tags. On a `vX.Y.Z` tag, CI builds the AppImage, the Flatpak an
 ## One-time setup
 
 - Flatpak remote (gives users `flatpak update`; also needed for system-wide installs):
-    1. Run `packaging/new-signing-key.sh`. It writes the public half to `packaging/signing-key.b64` (commit it) and the private half to `~/.local/share/opencamera-flatpak-private-signing.asc`.
-    2. Store the private half as the secret `FLATPAK_GPG_PRIVATE_KEY`: `gh secret set FLATPAK_GPG_PRIVATE_KEY < ~/.local/share/opencamera-flatpak-private-signing.asc`. Back it up in a password manager, then delete the file. Losing it breaks every user's remote.
+    1. Run `packaging/new-signing-key.sh`. It writes the public half to `packaging/signing-key.b64` (commit it) and the private half to `~/.local/share/opencam-flatpak-private-signing.asc`.
+    2. Store the private half as the secret `FLATPAK_GPG_PRIVATE_KEY`: `gh secret set FLATPAK_GPG_PRIVATE_KEY < ~/.local/share/opencam-flatpak-private-signing.asc`. Back it up in a password manager, then delete the file. Losing it breaks every user's remote.
     3. Settings → Pages → Source: **GitHub Actions**.
     4. Settings → Environments → `github-pages` → add deployment tag rule `v*` (Pages creates it branch-only, so the first tag deploy is refused otherwise).
     Tags fail without steps 1–2. Never deploy Pages from `master`: every deploy replaces the whole site, including the Flatpak repo.

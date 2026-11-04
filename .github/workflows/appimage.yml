@@ -49,8 +49,8 @@ jobs:
         with:
           name: appimage-x86_64
           path: |
-            OpenCamera-*.AppImage
-            OpenCamera-*.AppImage.zsync
+            OpenCam-*.AppImage
+            OpenCam-*.AppImage.zsync
 
   release:
     name: Add to release
@@ -70,4 +70,4 @@ jobs:
         run: |
           gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||
             gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes || sleep 20
-          gh release upload "$GITHUB_REF_NAME" OpenCamera-*.AppImage* --repo "$GITHUB_REPOSITORY" --clobber
+          gh release upload "$GITHUB_REF_NAME" OpenCam-*.AppImage* --repo "$GITHUB_REPOSITORY" --clobber

@@ -1,4 +1,4 @@
-package dev.opencamera.opencamera
+package dev.opencam.opencam
 
 import io.flutter.embedding.android.FlutterActivity
 

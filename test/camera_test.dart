@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencamera/camera.dart';
+import 'package:opencam/camera.dart';
 
 void main() {
   test('special characters in credentials survive in the RTSP URL', () {

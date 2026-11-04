@@ -7,7 +7,7 @@ set -euo pipefail
 umask 077
 cd "$(dirname "$0")"
 public=signing-key.b64
-private=${1:-$HOME/.local/share/opencamera-flatpak-private-signing.asc}
+private=${1:-$HOME/.local/share/opencam-flatpak-private-signing.asc}
 
 # A new key breaks every user's existing remote (they trust the old one), so never replace it by accident.
 [ ! -e "$public" ] || { echo "$public already exists: refusing to make a new key (see 'Replacing the key' in RELEASING.md)" >&2; exit 1; }
@@ -25,7 +25,7 @@ trap 'gpgconf --kill gpg-agent >/dev/null 2>&1 || true; rm -rf "$GNUPGHOME"' EXI
 
 # No passphrase (CI imports it with --batch) and no expiry (an expired key silently breaks updates).
 gpg --batch --pinentry-mode loopback --passphrase '' \
-  --quick-generate-key "OpenCamera Flatpak <noreply@users.noreply.github.com>" ed25519 sign never 2>/dev/null
+  --quick-generate-key "OpenCam Flatpak <noreply@users.noreply.github.com>" ed25519 sign never 2>/dev/null
 fpr=$(gpg --list-keys --with-colons | awk -F: '/^fpr/ {print $10; exit}')
 
 gpg --export "$fpr" | base64 -w0 > "$public"

@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=OpenCamera
+Name=OpenCam
 Comment=Viewer for LAN IP cameras
-Exec=opencamera
-Icon=dev.opencamera.opencamera
+Exec=opencam
+Icon=dev.opencam.opencam
 Categories=AudioVideo;Video;
 Terminal=false

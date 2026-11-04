@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencamera/scan.dart';
+import 'package:opencam/scan.dart';
 
 void main() {
   test('parses a WS-Discovery reply into ip, name and model', () {

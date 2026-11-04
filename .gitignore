@@ -53,7 +53,7 @@ app.*.map.json
 /linuxdeploy-*.AppImage
 *.AppImage
 *.flatpak
-/opencamera-linux-x64.tar.gz
+/opencam-linux-x64.tar.gz
 .flatpak-builder/
 /repo/
 /squashfs-root/

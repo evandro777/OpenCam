@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds OpenCamera-x86_64.AppImage from build/linux/x64/release/bundle.
+# Builds OpenCam-x86_64.AppImage from build/linux/x64/release/bundle.
 # Needs libmpv-dev installed (its libmpv.so.2 and deps get bundled). GTK3 and libsecret stay on the host.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -12,7 +12,7 @@ cat > AppRun <<'EOF'
 #!/bin/sh
 HERE="$(dirname "$(readlink -f "$0")")"
 export LD_LIBRARY_PATH="$HERE/usr/lib:$HERE/usr/bin/lib:${LD_LIBRARY_PATH:-}"
-exec "$HERE/usr/bin/opencamera" "$@"
+exec "$HERE/usr/bin/opencam" "$@"
 EOF
 chmod +x AppRun
 
@@ -30,16 +30,16 @@ VERSION="$(sed -nE 's/^version: *([^+]*).*/\1/p' pubspec.yaml)"
 # No --output: linuxdeploy only fills AppDir; appimagetool packs it (and writes the .zsync).
 ./"$LD" --appimage-extract-and-run \
   --appdir AppDir \
-  --executable AppDir/usr/bin/opencamera \
+  --executable AppDir/usr/bin/opencam \
   --deploy-deps-only AppDir/usr/bin/lib \
   --exclude-library 'libgtk-3*' --exclude-library 'libgdk-3*' --exclude-library 'libglib-2*' \
   --exclude-library 'libgio-2*' --exclude-library 'libgobject-2*' --exclude-library 'libgmodule-2*' \
   --library "$MPV" \
   --custom-apprun AppRun \
-  --desktop-file packaging/dev.opencamera.opencamera.desktop \
-  --icon-file packaging/dev.opencamera.opencamera.png
+  --desktop-file packaging/dev.opencam.opencam.desktop \
+  --icon-file packaging/dev.opencam.opencam.png
 
 # Update info: AppImageUpdate-style tools fetch the .zsync from the latest release and download only the changed blocks.
 ARCH=x86_64 appimagetool --no-appstream \
-  -u "gh-releases-zsync|evandro777|OpenCam|latest|OpenCamera-*x86_64.AppImage.zsync" \
-  AppDir "OpenCamera-$VERSION-x86_64.AppImage"
+  -u "gh-releases-zsync|evandro777|OpenCam|latest|OpenCam-*x86_64.AppImage.zsync" \
+  AppDir "OpenCam-$VERSION-x86_64.AppImage"

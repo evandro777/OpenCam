@@ -42,10 +42,10 @@ jobs:
         run: |
           # The workflow that just finished says which asset to scan; a manual run scans both.
           case "$WORKFLOW" in
-            AppImage) section=appimage; patterns=(--pattern "OpenCamera-*.AppImage") ;;
-            Flatpak) section=flatpak; patterns=(--pattern "OpenCamera-*.flatpak") ;;
-            Android) section=android; patterns=(--pattern "OpenCamera-*.apk") ;;
-            *) section=manual; patterns=(--pattern "OpenCamera-*.AppImage" --pattern "OpenCamera-*.flatpak" --pattern "OpenCamera-*.apk") ;;
+            AppImage) patterns=(--pattern "OpenCam-*.AppImage") ;;
+            Flatpak) patterns=(--pattern "OpenCam-*.flatpak") ;;
+            Android) patterns=(--pattern "OpenCam-*.apk") ;;
+            *) patterns=(--pattern "OpenCam-*.AppImage" --pattern "OpenCam-*.flatpak" --pattern "OpenCam-*.apk") ;;
           esac
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" "${patterns[@]}" --dir assets
           : > report.md
@@ -80,14 +80,22 @@ jobs:
             fi
             echo "- $icon **$name**: $text. [Report](https://www.virustotal.com/gui/file/$sha)" >> report.md
           done
-          # The section sits between markers, so a rerun replaces it instead of adding a second one.
-          body=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body -q .body |
-            sed "/<!-- vt:$section -->/,/<!-- \/vt:$section -->/d")
+          # One "VirusTotal" section for the whole release, between markers so a rerun replaces it. The workflows each
+          # scan their own asset and may finish in any order: keep the lines of the other assets, replace the ones just
+          # scanned, and sort. The concurrency group above serializes runs of one tag, so this cannot race.
+          for file in assets/*; do echo "**$(basename "$file")**"; done > scanned.txt
+          body=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body -q .body)
+          lines=$({
+            printf '%s\n' "$body" | sed -n '/<!-- vt -->/,/<!-- \/vt -->/p' | grep '^- ' | grep -v -F -f scanned.txt || true
+            cat report.md
+          } | LC_ALL=C sort -t'*' -k3,3) # by the name between the ** **, not by the icon in front of it
+          # The old per-workflow sections (<!-- vt:appimage -->) are removed too.
+          body=$(printf '%s\n' "$body" | sed -e '/<!-- vt -->/,/<!-- \/vt -->/d' -e '/<!-- vt:[a-z]* -->/,/<!-- \/vt:[a-z]* -->/d')
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes "$body
 
-          <!-- vt:$section -->
-          ## VirusTotal ($section)
+          <!-- vt -->
+          ## VirusTotal
 
-          $(cat report.md)
-          <!-- /vt:$section -->"
+          $lines
+          <!-- /vt -->"
           exit $bad

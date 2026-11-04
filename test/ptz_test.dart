@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencamera/ptz.dart';
+import 'package:opencam/ptz.dart';
 
 void main() {
   test('WS-Security digest is base64(sha1(nonce + created + password))', () {

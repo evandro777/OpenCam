@@ -1,4 +1,4 @@
-# opencamera
+# OpenCam
 
 Flutter viewer for LAN IP cameras (Linux desktop + Android). It plays the cameras' RTSP streams directly with `media_kit` (libmpv/ffmpeg), so H.265 works and no PC or cloud is needed. It replaces the Yoosee and iCSee vendor apps.
 
@@ -58,9 +58,9 @@ On Android `media_kit_libs_video` bundles libmpv; on Linux it does not, so a pla
 
 `ci.yml` runs format, analyze, test, a Linux build and packaging-metadata validation on every push/PR. `appimage.yml`, `flatpak.yml` and `android.yml` build on every push/PR too, and on a tag `vX.Y.Z` attach to the GitHub release (see [RELEASING.md](RELEASING.md)); `virustotal.yml` scans them:
 
-- `OpenCamera-<version>-x86_64.AppImage` (`packaging/build-appimage.sh`; needs GTK3 and libsecret on the host)
-- `OpenCamera-<version>-x86_64.flatpak` (`packaging/dev.opencamera.opencamera.yml`; builds mpv/ffmpeg from source)
-- `OpenCamera-<version>.apk`
+- `OpenCam-<version>-x86_64.AppImage` (`packaging/build-appimage.sh`; needs GTK3 and libsecret on the host)
+- `OpenCam-<version>-x86_64.flatpak` (`packaging/dev.opencam.opencam.yml`; builds mpv/ffmpeg from source)
+- `OpenCam-<version>.apk`
 
 Not verified yet: the AppImage and Flatpak have not been built locally, and the APK is signed with the debug key.
 

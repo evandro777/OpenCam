@@ -1,8 +1,8 @@
-app-id: dev.opencamera.opencamera
+app-id: dev.opencam.opencam
 runtime: org.gnome.Platform
 runtime-version: "49"
 sdk: org.gnome.Sdk
-command: opencamera
+command: opencam
 finish-args:
   - --share=network # RTSP / ONVIF to the cameras
   - --socket=wayland
@@ -61,23 +61,23 @@ modules:
         url: https://github.com/mpv-player/mpv/archive/refs/tags/v0.39.0.tar.gz
         sha256: 2ca92437affb62c2b559b4419ea4785c70d023590500e8a52e95ea3ab4554683
 
-  - name: opencamera
+  - name: opencam
     buildsystem: simple
     build-commands:
-      - mkdir -p /app/opencamera
-      - tar --no-same-owner -xzf opencamera-linux-x64.tar.gz -C /app/opencamera
+      - mkdir -p /app/opencam
+      - tar --no-same-owner -xzf opencam-linux-x64.tar.gz -C /app/opencam
       - mkdir -p /app/bin
-      - ln -s /app/opencamera/opencamera /app/bin/opencamera
-      - install -Dm644 dev.opencamera.opencamera.desktop /app/share/applications/dev.opencamera.opencamera.desktop
-      - install -Dm644 dev.opencamera.opencamera.metainfo.xml /app/share/metainfo/dev.opencamera.opencamera.metainfo.xml
-      - install -Dm644 dev.opencamera.opencamera.png /app/share/icons/hicolor/192x192/apps/dev.opencamera.opencamera.png
+      - ln -s /app/opencam/opencam /app/bin/opencam
+      - install -Dm644 dev.opencam.opencam.desktop /app/share/applications/dev.opencam.opencam.desktop
+      - install -Dm644 dev.opencam.opencam.metainfo.xml /app/share/metainfo/dev.opencam.opencam.metainfo.xml
+      - install -Dm644 dev.opencam.opencam.png /app/share/icons/hicolor/192x192/apps/dev.opencam.opencam.png
     sources:
       # CI downloads the "linux" artifact into the repo root before building.
       - type: file
-        path: ../opencamera-linux-x64.tar.gz
+        path: ../opencam-linux-x64.tar.gz
       - type: file
-        path: dev.opencamera.opencamera.desktop
+        path: dev.opencam.opencam.desktop
       - type: file
-        path: dev.opencamera.opencamera.metainfo.xml
+        path: dev.opencam.opencam.metainfo.xml
       - type: file
-        path: dev.opencamera.opencamera.png
+        path: dev.opencam.opencam.png

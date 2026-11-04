@@ -30,5 +30,5 @@ jobs:
       - run: flutter build linux --release
       - name: Validate packaging metadata
         run: |
-          appstreamcli validate --no-net packaging/dev.opencamera.opencamera.metainfo.xml
-          desktop-file-validate packaging/dev.opencamera.opencamera.desktop
+          appstreamcli validate --no-net packaging/dev.opencam.opencam.metainfo.xml
+          desktop-file-validate packaging/dev.opencam.opencam.desktop
