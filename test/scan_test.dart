@@ -1,7 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencam/onvif.dart';
 import 'package:opencam/scan.dart';
 
 void main() {
+  test('cellular, VPN and container interfaces are not swept', () {
+    for (final n in ['rmnet_data0', 'docker0', 'br-1a2b', 'tun0', 'wg0']) {
+      expect(isLanInterface(n), isFalse, reason: n);
+    }
+    for (final n in ['wlan0', 'eth0', 'enp3s0', 'wlp2s0']) {
+      expect(isLanInterface(n), isTrue, reason: n);
+    }
+  });
+
   test('parses a WS-Discovery reply into ip, name and model', () {
     const xml =
         '<s:Envelope><s:Body><d:ProbeMatches><d:ProbeMatch>'
@@ -15,12 +25,13 @@ void main() {
     expect(f.hardware, 'IPC-123');
   });
 
-  test('reads the model from GetDeviceInformation', () {
-    expect(
-      parseModel('<tds:Model>XM533_X3-WQ-B_8M</tds:Model>'),
-      'XM533_X3-WQ-B_8M',
-    );
-    expect(parseModel('<html>404</html>'), isNull);
+  test('reads model and firmware from GetDeviceInformation', () {
+    const xml =
+        '<tds:Model>XM533_X3-WQ-B_8M</tds:Model>'
+        '<tds:FirmwareVersion>V5.00.R02</tds:FirmwareVersion>';
+    expect(infoTag(xml, 'Model'), 'XM533_X3-WQ-B_8M');
+    expect(infoTag(xml, 'FirmwareVersion'), 'V5.00.R02');
+    expect(infoTag('<html>404</html>', 'Model'), isNull);
   });
 
   test('ignores replies without XAddrs', () {

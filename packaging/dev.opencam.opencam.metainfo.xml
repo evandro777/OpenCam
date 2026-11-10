@@ -15,9 +15,9 @@
   <launchable type="desktop-id">dev.opencam.opencam.desktop</launchable>
   <content_rating type="oars-1.1"/>
   <releases>
-    <release version="1.0.3" date="2026-11-04">
+    <release version="1.0.4" date="2026-11-09">
       <description>
-        <p>First release.</p>
+        <p>Add SD-card recordings, motion alerts and tap-to-play grid</p>
       </description>
     </release>
   </releases>

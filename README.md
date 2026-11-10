@@ -10,13 +10,16 @@ Status: grid viewer works in code but is still being tested on devices. PTZ work
    - **Name**, **Host / IP**, **User**, **Password**.
    - **RTSP over UDP**: turn on for Yoosee cameras (CAM2). mpv defaults to TCP and those cameras only answer on UDP.
    - **Split stacked picture**: turn on for two-lens cameras (CAM1). It shows the top and bottom lens as two cells from one stream.
-2. Back on the grid, tap a cell for fullscreen. It keeps the same stream and connection as the tile (no reconnect) and has the same option buttons; tap **SD** there to switch to HD.
+2. The app opens with every camera stopped: each tile shows a snapshot taken at startup (a few seconds; slow cameras may keep a blank tile) and a play icon. Tap the picture of a stopped tile to open that camera alone (it plays only while open, then goes back to its snapshot); the small play button on the tile plays it in the grid, and the one at the top starts them all (it turns into stop-all). Tap a playing tile for fullscreen.
+   Back on the grid, tap a cell for fullscreen. It keeps the same stream and connection as the tile (no reconnect) and has the same option buttons; tap **SD** there to switch to HD.
 3. The speaker icon mutes or unmutes a camera (muted by default).
 4. In fullscreen, cameras with ONVIF PTZ show arrows on the right: hold to move, release to stop. Under the arrows:
    - **⇄ Invert left/right**: turn on if the camera pans the wrong way (the cameras don't report it).
    - **Lens that moves** (two-lens cameras only): tap to cycle unknown / top / bottom. Once set, zooming on the other lens hides the arrows.
 
    Both are saved per camera.
+
+5. **Recordings** (film-strip icon in fullscreen): lists the clips on the camera's SD card for a day (arrows or tap the date) and plays one. Works on iCSee / Xiongmai cameras (DVRIP, port 34567); Yoosee cameras have no LAN access to their recordings. A camera with no password locks DVRIP logins (error 205): set a password on it in iCSee and use it here.
 
 Notes:
 
@@ -81,7 +84,10 @@ flutter test
 | `lib/session.dart`       | One player per camera: stream swap, mute, stall watchdog |
 | `lib/grid_page.dart`     | Grid, fullscreen, lifecycle handling                     |
 | `lib/settings_page.dart` | Add/edit/delete cameras                                  |
-| `lib/ptz.dart`           | ONVIF pan/tilt (WS-Security SOAP over HTTP)              |
+| `lib/onvif.dart`         | ONVIF client (WS-Security SOAP over HTTP), camera info   |
+| `lib/ptz.dart`           | ONVIF pan/tilt                                           |
+| `lib/stream_export.dart` | Stream URLs with login, player command lines             |
+| `lib/watchdog.dart`      | Reconnect / backoff decision for a stalled stream        |
 
 ## Troubleshooting
 

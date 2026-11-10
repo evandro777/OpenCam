@@ -26,4 +26,8 @@ Releases are Git tags. On a `vX.Y.Z` tag, CI builds the AppImage, the Flatpak an
     Tags fail without steps 1–2. Never deploy Pages from `master`: every deploy replaces the whole site, including the Flatpak repo.
 - AppImage updates: nothing to set up. The `.zsync` is built and attached to each release; `AppImageUpdate` reads the update info embedded in the file.
 - VirusTotal (optional, or delete `virustotal.yml`): Settings → Secrets and variables → Actions → secret `VIRUSTOTAL_API_KEY`.
-- Android: releases are signed with the debug key until a real keystore is wired into `android/app/build.gradle.kts`.
+- Android signing: tag builds fail without a release keystore (plain pushes and fork PRs fall back to the debug key). One-off setup, outside the repo and outside Dropbox:
+    1. `keytool -genkeypair -v -keystore ~/.local/share/opencam-release.jks -alias opencam -keyalg RSA -keysize 4096 -validity 10000`
+    2. Secrets: `base64 -w0 ~/.local/share/opencam-release.jks | gh secret set ANDROID_KEYSTORE_B64`, then `gh secret set ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS` (`opencam`). Use the same password you gave keytool; it is also the key password.
+    3. Back the keystore up in a password manager. Losing it means users must uninstall to update, like a changed key.
+  Installs of earlier debug-signed APKs need one uninstall (which removes the saved cameras) before the first release-signed one installs.

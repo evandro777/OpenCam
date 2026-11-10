@@ -39,6 +39,8 @@ modules:
       - type: git
         url: https://github.com/open-source-parsers/jsoncpp.git
         tag: 1.9.6
+        # A tag can be moved; the commit cannot. Change both when upgrading.
+        commit: 89e2973c754a9c02a49974d839779b151e95afd6
 
   - name: libplacebo # hard dependency of mpv >= 0.37
     buildsystem: meson
@@ -47,6 +49,8 @@ modules:
       - type: git
         url: https://code.videolan.org/videolan/libplacebo.git
         tag: v7.349.0
+        # Annotated tag: this is the commit it points to (git ls-remote <url> 'refs/tags/v7.349.0^{}').
+        commit: 1fd3c7bde7b943fe8985c893310b5269a09b46c5
 
   - name: mpv
     buildsystem: meson

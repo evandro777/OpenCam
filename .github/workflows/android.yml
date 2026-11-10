@@ -37,7 +37,24 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      # shortcut: signed with the debug key (android/app/build.gradle.kts), so updates only work between builds from the same key; add a real keystore secret before wide distribution
+      # Release key from secrets (RELEASING.md). Without them (fork PRs, plain
+      # master pushes) the APK is debug-signed; a tag must never ship that.
+      - name: Release keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          OPENCAM_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          OPENCAM_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            if [ "$GITHUB_REF_TYPE" = "tag" ]; then echo "tag build without the ANDROID_KEYSTORE_B64 secret"; exit 1; fi
+            echo "no keystore secret: debug-signed build"; exit 0
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          {
+            echo "OPENCAM_KEYSTORE=$RUNNER_TEMP/release.jks"
+            echo "OPENCAM_KEYSTORE_PASSWORD=$OPENCAM_KEYSTORE_PASSWORD"
+            echo "OPENCAM_KEY_ALIAS=$OPENCAM_KEY_ALIAS"
+          } >> "$GITHUB_ENV"
       - run: flutter build apk --release
       - name: Name the APK
         run: |

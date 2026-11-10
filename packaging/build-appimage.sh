@@ -18,7 +18,9 @@ chmod +x AppRun
 
 LD=linuxdeploy-x86_64.AppImage
 if [ ! -x "$LD" ]; then
-  curl -fsSL -o "$LD" https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+  # Pinned release + checksum (the "continuous" build changes under us). To upgrade: pick a new release, run sha256sum on it.
+  curl -fsSL -o "$LD" https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20251107-1/linuxdeploy-x86_64.AppImage
+  echo "c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d  $LD" | sha256sum -c -
   chmod +x "$LD"
 fi
 

@@ -2,19 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'camera.dart';
+import 'onvif.dart';
+
 /// A device found on the network. [name]/[hardware] only come from ONVIF.
 class Found {
   Found(this.ip, {this.name, this.hardware, this.rtsp = false});
   final String ip;
-  String? name, hardware;
+  String? name, hardware, firmware;
   bool rtsp;
-
-  String get label => [
-    ip,
-    ?name,
-    if (hardware != null && hardware != name) hardware!,
-    if (!rtsp) 'no RTSP on 554',
-  ].join(' · ');
 }
 
 /// Finds cameras on the local /24 network(s): ONVIF WS-Discovery (gives name
@@ -27,20 +23,30 @@ Future<List<Found>> scanCameras() async {
       type: InternetAddressType.IPv4,
       includeLoopback: false,
     ))
-      for (final a in n.addresses) a.address,
+      if (isLanInterface(n.name))
+        for (final a in n.addresses) a.address,
   ];
   final byIp = <String, Found>{};
   Found at(String ip) => byIp.putIfAbsent(ip, () => Found(ip));
 
   final onvif = [for (final a in addrs) _discoverOnvif(a)];
   final prefixes = {for (final a in addrs) a.substring(0, a.lastIndexOf('.'))};
-  final probes = [
-    for (final p in prefixes)
-      for (var i = 1; i < 255; i++) _probe('$p.$i'),
-  ];
-
-  for (final ip in await Future.wait(probes)) {
-    if (ip != null) at(ip).rtsp = true;
+  // Two sweeps: a connect to a host whose ARP entry or Wi-Fi radio is asleep
+  // can time out the first time, so the second sweep retries the misses.
+  for (var pass = 0; pass < 2; pass++) {
+    final todo = [
+      for (final p in prefixes)
+        for (var i = 1; i < 255; i++)
+          if (byIp['$p.$i']?.rtsp != true) '$p.$i',
+    ];
+    // Batches: hundreds of sockets at once can hit the open-file limit, and a
+    // failed connect would read as "closed".
+    for (var i = 0; i < todo.length; i += 64) {
+      final batch = todo.skip(i).take(64);
+      for (final ip in await Future.wait([for (final a in batch) _probe(a)])) {
+        if (ip != null) at(ip).rtsp = true;
+      }
+    }
   }
   for (final list in await Future.wait(onvif)) {
     for (final m in list) {
@@ -54,10 +60,22 @@ Future<List<Found>> scanCameras() async {
   await Future.wait([
     for (final f in byIp.values)
       if (f.rtsp && f.hardware == null)
-        _deviceModel(f.ip).then((m) => f.hardware = m),
+        _deviceInfo(f.ip).then((x) {
+          if (x == null) return;
+          f.hardware = infoTag(x, 'Model');
+          f.firmware = infoTag(x, 'FirmwareVersion');
+        }),
   ]);
   return byIp.values.toList()..sort((a, b) => _num(a.ip).compareTo(_num(b.ip)));
 }
+
+/// False for cellular, VPN, container and virtual networks: a camera is not
+/// there, and sweeping a carrier's range is slow and rude. Judged by name
+/// (not by address range: carriers use 10/8, Docker sits in 172.16/12).
+bool isLanInterface(String name) => !RegExp(
+  r'^(v4-|rmnet|ccmni|pdp|docker|br-|veth|virbr|vbox|vmnet|tun|tap|wg|ppp|tailscale|zt)',
+  caseSensitive: false,
+).hasMatch(name);
 
 int _num(String ip) => ip.split('.').fold(0, (n, p) => n * 256 + int.parse(p));
 
@@ -66,7 +84,7 @@ Future<String?> _probe(String ip) async {
     final s = await Socket.connect(
       ip,
       554,
-      timeout: const Duration(milliseconds: 800),
+      timeout: const Duration(milliseconds: 1500),
     );
     s.destroy();
     return ip;
@@ -110,41 +128,21 @@ Future<List<Found>> _discoverOnvif(String local) async {
   return out;
 }
 
-const _infoXml =
-    '<?xml version="1.0"?><s:Envelope '
-    'xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body>'
-    '<GetDeviceInformation xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
-    '</s:Body></s:Envelope>';
-
-/// ONVIF model of [ip]: first of the usual ONVIF ports that answers.
+/// GetDeviceInformation reply of [ip]: first of the usual ONVIF ports that answers.
 /// shortcut: fixed port list, upgrade when a camera uses another one.
-Future<String?> _deviceModel(String ip) async {
-  final r = await Future.wait([
-    for (final p in [8899, 5000, 80, 8000, 8080]) _modelAt(ip, p),
-  ]);
-  return r.nonNulls.firstOrNull;
+Future<String?> _deviceInfo(String ip) async {
+  final anon = Camera(name: '', host: ip, user: '', pass: '');
+  // A port that is closed, not ONVIF, or wants credentials counts as no answer.
+  return firstOnvif<String>((p) async {
+    final x = await onvifSoap(
+      anon,
+      'http://$ip:$p/onvif/device_service',
+      '<tds:GetDeviceInformation/>',
+      auth: false,
+    );
+    return infoTag(x, 'Model') == null ? null : x;
+  });
 }
-
-Future<String?> _modelAt(String ip, int port) async {
-  final c = HttpClient()..connectionTimeout = const Duration(milliseconds: 800);
-  try {
-    final req = await c.post(ip, port, '/onvif/device_service');
-    req.headers.contentType = ContentType('application', 'soap+xml');
-    // Xiongmai's HTTP server rejects Dart's default chunked body.
-    final body = utf8.encode(_infoXml);
-    req.contentLength = body.length;
-    req.add(body);
-    final res = await req.close().timeout(const Duration(seconds: 3));
-    return parseModel(await res.transform(utf8.decoder).join());
-  } catch (_) {
-    return null; // closed, not ONVIF, or wants credentials
-  } finally {
-    c.close(force: true);
-  }
-}
-
-String? parseModel(String xml) =>
-    RegExp(r'<(?:\w+:)?Model>([^<]+)<').firstMatch(xml)?.group(1);
 
 /// The device's IP, name and model from a WS-Discovery ProbeMatches reply.
 Found? parseProbeMatch(String xml) {
